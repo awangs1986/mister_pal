@@ -4,6 +4,16 @@ Hybrid MiSTer FPGA core that runs [SDLPAL](https://github.com/sdlpal/sdlpal) (*C
 
 本项目是跑在 MiSTer 上的仙剑一（SDLPAL）混合核：FPGA 负责原生视频/音频时序，游戏逻辑由 HPS 上的 ARM 运行。
 
+### A casual hobby project / 兴趣随手做的
+
+**中文：**  
+这是兴趣驱动、随手做着玩的项目，不保证你那边一定能跑通。遇到 bug 欢迎提 issue 提醒我改；我懒得打正式 Release。如果你对编译/部署一窍不通，最省事的办法是：把本仓库链接丢给 AI，再把你 MiSTer 的 IP 和 root 密码也给它，让它帮你全自动编好、拷好、配好。
+
+**English：**  
+This is a casual hobby project. I do **not** promise it will work on every setup. Bugs are welcome—open an issue and nudge me to fix them. I am too lazy to ship polished Releases. If you do not want to deal with builds at all, the easiest path is: give an AI this repo URL plus your MiSTer’s IP and root password, and let it compile, deploy, and configure everything for you.
+
+> Security note / 安全提醒：把 root 密码交给 AI 有风险，仅在你信任的本地/私密环境使用；用完可改密码。
+
 ---
 
 ## Why this project exists / 为什么做这个版本
@@ -51,41 +61,53 @@ Upstream SDLPAL is GPL-3.0: forks and modified branches are allowed under GPL-3.
 
 ## Game data setup (required) / 正版资源怎么放（必做）
 
-This repo ships **code only**. Copy retail data onto the MiSTer SD card yourself. Do **not** commit game files to GitHub.
+**中文：** 本仓库只含代码，不含任何游戏素材。请自行把正版数据拷到 MiSTer 的 SD 卡。**不要**把素材提交进 GitHub。
 
-本仓库只含代码。请自行把正版数据拷到 MiSTer 的 SD 卡。**不要**把素材提交进 GitHub。
+**English：** This repo ships **code only**. Copy retail data onto the MiSTer SD card yourself. Do **not** commit game files to GitHub.
 
 ### 1) Buy / obtain the game · 获取正版游戏
 
-Recommended: purchase [*Sword and Fairy* / 仙剑奇侠传](https://store.steampowered.com/app/1546570/) on Steam (AppID **1546570**), which includes the editions SDLPAL can use.
+**中文：**  
+推荐在 Steam 购买 [*Sword and Fairy* / 仙剑奇侠传](https://store.steampowered.com/app/1546570/)（AppID **1546570**），内含 SDLPAL 可用的版本。  
+也可以使用你合法拥有的 **98 柔情 / Win95** 数据包（SDLPAL 支持的即可）。
 
-Also acceptable: any **legally owned** 98 柔情 / Win95 data set that SDLPAL supports.
+**English：**  
+Recommended: purchase [*Sword and Fairy*](https://store.steampowered.com/app/1546570/) on Steam (AppID **1546570**).  
+Also fine: any **legally owned** Win98 “柔情” / Win95 data set that SDLPAL supports.
 
 ### 2) Copy game data → MiSTer · 游戏本体放到哪里
 
-On the MiSTer SD card, place the game files here:
+**中文：** 在 MiSTer 的 SD 卡上，把游戏数据文件放到：
+
+**English：** On the MiSTer SD card, place the game files here:
 
 ```text
 /media/fat/games/PAL2/Games/
 ```
 
-Typical contents (names may vary by edition; on Linux/MiSTer prefer **lowercase**):
+**中文：** 常见文件（具体文件名因版本略有差异；在 Linux/MiSTer 上建议全部用**小写**文件名）：
 
-| Examples | Role |
-|----------|------|
-| `abc.mkf`, `map.mkf`, `sss.mkf`, `pat.mkf`, … | Core data packs |
-| `mgo.mkf`, `rgm.mkf`, `ball.mkf`, … | Graphics / objects |
-| `fbp.mkf`, `fire.mkf`, `rng.mkf`, … | More assets |
-| `word.dat` / fonts as required by your edition | Text |
-| Optional: `Musics/`, AVI, etc. | Depends on edition; this build forces **OGG** BGM (below) |
+**English：** Typical contents (names may vary; on Linux/MiSTer prefer **lowercase**):
 
-**Local clone of this repo (optional, for packing before copy):**
+| 示例 / Examples | 作用 / Role |
+|-----------------|-------------|
+| `abc.mkf`, `map.mkf`, `sss.mkf`, `pat.mkf`, … | 核心数据包 / Core data |
+| `mgo.mkf`, `rgm.mkf`, `ball.mkf`, … | 图形与物件 / Graphics |
+| `fbp.mkf`, `fire.mkf`, `rng.mkf`, … | 其它素材 / More assets |
+| `word.dat` 等字库 | 文字 / Text |
+| 可选 `Musics/`、AVI 等 | 视版本而定；本核背景音乐强制走 **OGG**（见下一步） |
+
+**中文：** 若你先在电脑上的本仓库目录里整理再拷到 SD 卡，可用同样结构（该路径已被 gitignore，切勿 push）：
+
+**English：** Optional local staging in this repo (gitignored—never push):
 
 ```text
-games/PAL2/Games/     ← same layout; gitignored, never push
+games/PAL2/Games/
 ```
 
-Handler launches:
+**中文：** 启动脚本实际会这样启动游戏：
+
+**English：** The handler launches:
 
 ```bash
 ./PAL -nativevideo -game /media/fat/games/PAL2/Games
@@ -93,68 +115,92 @@ Handler launches:
 
 ### 3) Steam Workshop OGG music (Roland SC) · 创意工坊 OGG 音乐
 
-Workshop item used by this project:
+**中文：** 本项目背景音乐使用创意工坊音源包：
+
+**English：** BGM pack used by this project:
 
 - [PAL SC Soundtracks](https://steamcommunity.com/sharedfiles/filedetails/?id=2433259482) (`id=2433259482`)
 
 #### Where Steam stores the download · Steam 本机路径
 
-After you **own the game**, **subscribe** to the workshop item, and let Steam finish downloading:
+**中文：**  
+先确保你已购买游戏，在 Steam 创意工坊**订阅**该物品，并等下载完成。文件一般在：
+
+**English：**  
+Own the game, **subscribe** to the item, wait for Steam to finish downloading:
 
 ```text
 <Steam>\steamapps\workshop\content\1546570\2433259482\
 ```
 
-Default Steam root on Windows is often:
+**中文：** Windows 默认 Steam 路径常见为：
+
+**English：** Default Windows Steam root is often:
 
 ```text
 C:\Program Files (x86)\Steam\steamapps\workshop\content\1546570\2433259482\
 ```
 
-If Steam is on another drive/library, replace `<Steam>` with that library’s `steamapps` parent.  
-若订阅后文件夹仍为空：在 Steam 里打开游戏一次，或在创意工坊页面确认已订阅并完成下载。
+**中文：**  
+- 若 Steam 装在别的盘/游戏库，把 `<Steam>` 换成对应库的根目录再进 `steamapps\...`。  
+- 订阅后文件夹仍是空的：进一次 Steam 里的仙剑，或回创意工坊确认已订阅且下载完成。  
+- 打开该目录后应能看到编号的 `.ogg`；若还有一层 `ogg` 子文件夹，进子文件夹再拷。
 
-Inside that folder you should see numbered OGG files (and possibly an `ogg` subfolder—open it if present).
+**English：**  
+- If Steam lives on another drive/library, replace `<Steam>` accordingly.  
+- Empty folder after subscribe: launch the game once, or re-check the workshop download.  
+- You should see numbered `.ogg` files (open an `ogg` subfolder if present).
 
-#### Where to put them for MiSTer PAL2 · 拷到本项目/MiSTer 的哪里
+#### Where to put them for MiSTer PAL2 · 拷到哪里
 
-This core expects **2-digit** names under an `ogg` directory next to the game data:
+**中文：** 本核要求音乐放在游戏数据旁的 `ogg` 目录，文件名为**两位数字**（`01.ogg`，不是 `1.ogg` 或 `001.ogg`）：
+
+**English：** This core expects **2-digit** names under `ogg` next to the game data:
 
 ```text
 /media/fat/games/PAL2/Games/ogg/01.ogg
 /media/fat/games/PAL2/Games/ogg/02.ogg
 ...
-/media/fat/games/PAL2/Games/ogg/86.ogg   # count depends on the pack
+/media/fat/games/PAL2/Games/ogg/86.ogg   # 数量以音源包为准 / count depends on the pack
 ```
 
-Same layout if you stage files in the git tree before copying to the SD card:
+**中文：** 在本仓库里暂存时同样结构（gitignore）：
+
+**English：** Same layout for local staging (gitignored):
 
 ```text
-games/PAL2/Games/ogg/NN.ogg     ← gitignored
+games/PAL2/Games/ogg/NN.ogg
 ```
 
-**Copy steps / 操作步骤:**
+**Copy steps / 操作步骤：**
 
-1. Subscribe to the workshop item while logged into Steam with the purchased game.
-2. Open `...\workshop\content\1546570\2433259482\`.
-3. Copy every `*.ogg` into `/media/fat/games/PAL2/Games/ogg/`.
-4. Rename if needed so names match **`NN.ogg`** (`01.ogg` … `09.ogg`, not `1.ogg` or `001.ogg`).  
-   - If the pack already uses `01.ogg` style, copy as-is.  
-   - If it uses `001.ogg` / `1.ogg`, rename to two digits.
-5. Workshop notes sometimes ask to duplicate missing tracks (e.g. copy `06`→`07`); follow the workshop description if a track is silent.
+1. **中文：** 用已购买仙剑的 Steam 账号订阅上述创意工坊物品。  
+   **English：** Subscribe while logged into Steam with the purchased game.
+2. **中文：** 打开 `...\workshop\content\1546570\2433259482\`。  
+   **English：** Open that workshop folder.
+3. **中文：** 把里面所有 `*.ogg` 复制到 `/media/fat/games/PAL2/Games/ogg/`。  
+   **English：** Copy every `*.ogg` into `/media/fat/games/PAL2/Games/ogg/`.
+4. **中文：** 如有需要，改名为 **`NN.ogg`**（`01.ogg`…`09.ogg`）。已是两位数字则可直接拷；若是 `001.ogg` / `1.ogg` 请改成两位。  
+   **English：** Rename to **`NN.ogg`** if needed (`01`…`09`, not `1` or `001`).
+5. **中文：** 创意工坊说明里若要求补缺曲（例如复制 `06`→`07`），按说明做；某首没声时再检查是否缺号。  
+   **English：** Follow workshop notes for duplicated/missing tracks if a cue is silent.
 
-MiSTer build **forces `MUSIC_OGG`** — without `Games/ogg/NN.ogg`, BGM will be silent / empty.
+**中文：** 本核强制 `MUSIC_OGG`。没有 `Games/ogg/NN.ogg` 就没有背景音乐。
+
+**English：** This build **forces `MUSIC_OGG`**. Without `Games/ogg/NN.ogg`, BGM stays silent.
 
 ### 4) Deploy binaries · 部署程序（简述）
 
-| File | MiSTer path |
-|------|-------------|
-| FPGA bitstream | `/media/fat/_Other/PAL2.rbf` |
-| ARM binary | `/media/fat/games/PAL2/PAL` |
-| Handler | `/media/fat/games/PAL2/_handler.sh` |
-| Game + OGG | `/media/fat/games/PAL2/Games/` (+ `ogg/`) |
+| 文件 / File | MiSTer 路径 / Path |
+|-------------|-------------------|
+| FPGA 比特流 / bitstream | `/media/fat/_Other/PAL2.rbf` |
+| ARM 程序 / binary | `/media/fat/games/PAL2/PAL` |
+| 启动脚本 / handler | `/media/fat/games/PAL2/_handler.sh` |
+| 游戏数据 + OGG | `/media/fat/games/PAL2/Games/`（含 `ogg/`） |
 
-Then load **PAL2** from the MiSTer menu.
+**中文：** 拷好后在 MiSTer 菜单加载 **PAL2** 即可。
+
+**English：** Then load **PAL2** from the MiSTer menu.
 
 ---
 
