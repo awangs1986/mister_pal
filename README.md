@@ -1,5 +1,25 @@
 # MiSTer PAL2
 
+### Lineage & thanks / 项目渊源与致谢
+
+**中文：**  
+本仓库是在上游开源工作上的二次开发，不是从零凭空写出来的：
+
+- **游戏引擎：** 基于 [SDLPAL](https://github.com/sdlpal/sdlpal)（仙剑一开源引擎）修改与移植。  
+- **MiSTer 混合核框架：** 借鉴并改编自 [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8) 的 FPGA + HPS（ARM）架构思路。
+
+再次衷心感谢 **SDLPAL** 全体作者与贡献者（含 Wei Mingzhi 等），以及 **MiSTer PICO-8 / MiSTer 社区**相关作者——没有你们的工作，就不会有这个项目。
+
+**English：**  
+This repository is a derivative / follow-on project, not a from-scratch codebase:
+
+- **Game engine:** based on [SDLPAL](https://github.com/sdlpal/sdlpal) (open-source *Chinese Paladin I* engine), modified and ported here.  
+- **MiSTer hybrid-core scaffolding:** adapted from the FPGA + HPS (ARM) approach of [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8).
+
+Once again, sincere thanks to the **SDLPAL** authors and contributors (including Wei Mingzhi and the SDLPAL team), and to the **MiSTer PICO-8 / MiSTer community** authors—this project would not exist without your work.
+
+---
+
 Hybrid MiSTer FPGA core that runs [SDLPAL](https://github.com/sdlpal/sdlpal) (*Chinese Paladin* / 仙剑奇侠传 I) on the HPS, with native FPGA video/audio aimed at NeoGeo-class **320×224** RGBS/HDMI. In-game content is **320×200**, letterboxed in software (small black bars top/bottom).
 
 本项目是跑在 MiSTer 上的仙剑一（SDLPAL）混合核：FPGA 负责原生视频/音频时序，游戏逻辑由 HPS 上的 ARM 运行。
