@@ -117,7 +117,7 @@ Also fine: any **legally owned** Win98 “柔情” / Win95 data set that SDLPAL
 | `mgo.mkf`, `rgm.mkf`, `ball.mkf`, … | 图形与物件 / Graphics |
 | `fbp.mkf`, `fire.mkf`, `rng.mkf`, … | 其它素材 / More assets |
 | `word.dat` 等字库 | 文字 / Text |
-| 可选 `Musics/`、AVI 等 | 视版本而定；本核背景音乐强制走 **OGG**（见下一步） |
+| 可选 `Musics/`、AVI、`mus.mkf` 等 | 视版本而定；默认推荐 **OGG**（见下一步），RIX/MIDI 未在 MiSTer 上调通 |
 
 **中文：** 若你先在电脑上的本仓库目录里整理再拷到 SD 卡，可用同样结构（该路径已被 gitignore，切勿 push）：
 
