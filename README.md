@@ -1,4 +1,4 @@
-# MiSTer PAL2
+# MiSTer PAL95
 
 ### Lineage & thanks / 项目渊源与致谢
 
