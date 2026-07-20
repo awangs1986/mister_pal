@@ -6,17 +6,19 @@
 本仓库是在上游开源工作上的二次开发，不是从零凭空写出来的：
 
 - **游戏引擎：** 基于 [SDLPAL](https://github.com/sdlpal/sdlpal)（仙剑一开源引擎）修改与移植。  
-- **MiSTer 混合核框架：** 借鉴并改编自 [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8) 的 FPGA + HPS（ARM）架构思路。
+- **MiSTer 混合核框架：** 借鉴并改编自 [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8) 的 FPGA + HPS（ARM）架构思路。  
+- **CRT / 时序关键参数：** 参考了 [NeoGeo MiSTer](https://github.com/MiSTer-devel/NeoGeo_MiSTer) 项目的经验（如 320×224 一类与隔行/RGBS 相关的时序与同步做法）。
 
-再次衷心感谢 **SDLPAL** 全体作者与贡献者（含 Wei Mingzhi 等），以及 **MiSTer PICO-8 / MiSTer 社区**相关作者——没有你们的工作，就不会有这个项目。
+再次衷心感谢 **SDLPAL** 全体作者与贡献者（含 Wei Mingzhi 等），**MiSTer PICO-8** 相关作者，以及 **NeoGeo MiSTer** 与整个 MiSTer 社区——没有你们的工作，就不会有这个项目。
 
 **English：**  
 This repository is a derivative / follow-on project, not a from-scratch codebase:
 
 - **Game engine:** based on [SDLPAL](https://github.com/sdlpal/sdlpal) (open-source *Chinese Paladin I* engine), modified and ported here.  
-- **MiSTer hybrid-core scaffolding:** adapted from the FPGA + HPS (ARM) approach of [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8).
+- **MiSTer hybrid-core scaffolding:** adapted from the FPGA + HPS (ARM) approach of [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8).  
+- **CRT-critical timing:** drew on experience from [NeoGeo MiSTer](https://github.com/MiSTer-devel/NeoGeo_MiSTer) (e.g. 320×224-class timing and sync practices relevant to interlaced / RGBS CRTs).
 
-Once again, sincere thanks to the **SDLPAL** authors and contributors (including Wei Mingzhi and the SDLPAL team), and to the **MiSTer PICO-8 / MiSTer community** authors—this project would not exist without your work.
+Once again, sincere thanks to the **SDLPAL** authors and contributors (including Wei Mingzhi and the SDLPAL team), the **MiSTer PICO-8** authors, and the **NeoGeo MiSTer** / wider MiSTer community—this project would not exist without your work.
 
 ---
 
@@ -260,5 +262,6 @@ Open `fpga/` in Quartus (Cyclone V / MiSTer). Output RBF → `/media/fat/_Other/
 
 - SDLPAL / Wei Mingzhi & contributors — engine ([GPL-3.0](https://github.com/sdlpal/sdlpal))
 - [PAL SC Soundtracks](https://steamcommunity.com/sharedfiles/filedetails/?id=2433259482) — Roland SC OGG pack (obtain via Steam Workshop; not redistributed here)
-- MiSTer hybrid-core patterns (PICO-8 / related GPL cores)
+- MiSTer hybrid-core patterns ([PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8))
+- CRT / video timing experience ([NeoGeo MiSTer](https://github.com/MiSTer-devel/NeoGeo_MiSTer))
 - Softstar — original game (data not redistributed here)
