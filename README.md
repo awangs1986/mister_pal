@@ -207,9 +207,15 @@ games/PAL2/Games/ogg/NN.ogg
 5. **中文：** 创意工坊说明里若要求补缺曲（例如复制 `06`→`07`），按说明做；某首没声时再检查是否缺号。  
    **English：** Follow workshop notes for duplicated/missing tracks if a cue is silent.
 
-**中文：** 本核强制 `MUSIC_OGG`。没有 `Games/ogg/NN.ogg` 就没有背景音乐。
+**中文：**  
+当前默认配置走 `MUSIC_OGG`：按上面放好 `Games/ogg/NN.ogg` 就会有 BGM；缺了这些文件，背景音乐通常是静音的。
 
-**English：** This build **forces `MUSIC_OGG`**. Without `Games/ogg/NN.ogg`, BGM stays silent.
+若你更想用**原版音源**，也可以改用 **RIX**（如 `mus.mkf`）或 **MIDI**（如 `Musics/*.mid`）——SDLPAL 本身支持这些类型。但我**没有在 MiSTer 上调试过** RIX/MIDI 通路，不保证一次就能成功（理论上可以，需要自己改音乐类型配置并准备对应文件）。
+
+**English：**  
+This build is set up for `MUSIC_OGG` by default: place `Games/ogg/NN.ogg` as above for BGM; without those files, music is usually silent.
+
+If you prefer the **original soundtrack path**, you can also try **RIX** (e.g. `mus.mkf`) or **MIDI** (e.g. `Musics/*.mid`)—SDLPAL supports those formats. I have **not debugged** RIX/MIDI on MiSTer, so success is **not guaranteed** (it should work in theory; you would need to switch the music type in config and supply the matching files yourself).
 
 ### 4) Deploy binaries · 部署程序（简述）
 
