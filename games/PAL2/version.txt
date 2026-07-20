@@ -1,0 +1,1 @@
+PAL2 — NeoGeo hybrid (same ARM binary as PAL)

@@ -1,0 +1,59 @@
+name: Diff Harness
+
+# Differential bug-finding harness. Builds tools/z8headless (engine-only frame
+# dumper, no SDL/MiSTer) FULLY STATIC, smoke-runs it, and uploads the binary +
+# bios.p8 so the cart library can be scanned off-device (e.g. via WSL). NOT
+# shipped, NOT part of the ARM binary. Fast (~2 min): native x86-64, no QEMU/SDL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Run label'
+        required: false
+        type: string
+      addrs:
+        description: 'Crash addresses to resolve via addr2line (space-separated hex)'
+        required: false
+        type: string
+
+run-name: ${{ inputs.reason || 'diff-harness' }}
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y cmake g++
+      - name: Build z8headless (engine-only, fully static, with -g for addr2line)
+        run: |
+          cmake -B build -DBUILD_HEADLESS=ON -DSKIP_SDL_FRONTEND=ON -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_FLAGS="-g -fno-omit-frame-pointer" \
+            -DCMAKE_CXX_FLAGS="-g -fno-omit-frame-pointer"
+          cmake --build build --target z8headless -j$(nproc)
+          file build/z8headless
+      - name: Resolve crash addresses (addr2line)
+        if: ${{ inputs.addrs != '' }}
+        run: |
+          echo "Resolving against build/z8headless: ${{ inputs.addrs }}"
+          addr2line -f -C -i -e build/z8headless ${{ inputs.addrs }}
+      - name: Smoke run on test cart
+        run: |
+          mkdir -p out
+          cp src/pico8/bios.p8 ./bios.p8     # BIOS resolves via cwd (empty data-path prefix)
+          ./build/z8headless --cart tools/test_carts/shapes.p8 --frames 90 --dump 1,30,60,89 --out out
+          ls -la out
+      - name: Stage binary bundle
+        run: |
+          mkdir -p bundle
+          cp build/z8headless bundle/z8headless
+          cp src/pico8/bios.p8 bundle/bios.p8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harness-frames
+          path: out/*.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z8headless-linux
+          path: bundle/*

@@ -1,0 +1,182 @@
+name: Build MiSTer ARM
+run-name: ${{ inputs.reason || github.event.head_commit.message || github.ref_name }}
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Build label (shown as the run title in the Actions tab)'
+        required: false
+        type: string
+
+jobs:
+  build-arm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
+
+      - name: Build in ARM container
+        run: |
+          docker run --rm --platform linux/arm/v7 \
+            -v ${{ github.workspace }}:/build \
+            -w /build \
+            arm32v7/debian:bullseye-slim \
+            bash -c '
+              set -e
+
+              apt-get update -qq
+              apt-get install -y -qq g++ cmake make wget libasound2-dev >/dev/null 2>&1
+
+              # ── Step 1: Build SDL 1.2.15 as static library ──────────────
+              SDL_PREFIX=/tmp/sdl12
+              if [ ! -f "$SDL_PREFIX/lib/libSDL.a" ]; then
+                echo "=== Building SDL 1.2.15 (static, fbcon, ALSA) ==="
+                cd /tmp
+                wget -q https://www.libsdl.org/release/SDL-1.2.15.tar.gz
+                tar xzf SDL-1.2.15.tar.gz
+                cd SDL-1.2.15
+                ./configure \
+                  --prefix=$SDL_PREFIX \
+                  --disable-video-x11 \
+                  --disable-video-opengl \
+                  --disable-cdrom \
+                  --disable-shared \
+                  --enable-static \
+                  --disable-pulseaudio \
+                  --disable-esd \
+                  --enable-alsa \
+                  --enable-video-fbcon \
+                  --quiet
+                make -j$(nproc) --quiet
+                make install --quiet
+                echo "SDL built: $(du -h $SDL_PREFIX/lib/libSDL.a | cut -f1)"
+              fi
+
+              # ── Step 2: Build MiSTer_PICO-8 ─────────────────────────────
+              echo "=== Building MiSTer_PICO-8 ==="
+              cd /build
+              mkdir -p build-arm && cd build-arm
+              cmake .. \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_FLAGS="-mcpu=cortex-a9 -mtune=cortex-a9 -mfloat-abi=hard -mfpu=neon" \
+                -DCMAKE_CXX_FLAGS="-mcpu=cortex-a9 -mtune=cortex-a9 -mfloat-abi=hard -mfpu=neon" \
+                -DSDL_STATIC_PREFIX=$SDL_PREFIX
+              make -j$(nproc)
+
+              echo "=== Binary info ==="
+              ls -lh PICO-8
+            '
+
+      - name: Commit fresh ARM binary back to repo
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true   # don't lose the artifact upload if push races
+        run: |
+          # Save the freshly-built binary outside the worktree so we can
+          # always restore it after any rebase/conflict, no matter what
+          # state main is in.
+          mkdir -p /tmp/ci-binary
+          cp build-arm/PICO-8 /tmp/ci-binary/PICO-8
+          git config user.email "ci@misterorganize"
+          git config user.name "MiSTer Organize CI"
+          # Diagnostic-marker gate (added 2026-05-25 per feedback_no_diagnostic_binaries_in_db.md):
+          # Universal hybrid-core rule. If any source path that contributes to the final
+          # binary carries TEMPORARY / SUB-PROFILE / DIAG instrumentation (in PICO-8's
+          # case: src/ C++ sources OR bios.p8 Lua sandbox-side), the rebuilt binary is
+          # for research only and MUST NOT land on main (where DB rebuild would pick up
+          # its hash and ship it via db.json to end users). Binary still uploads as
+          # workflow artifact below for manual deploy testing.
+          if grep -rqE "TEMPORARY PROFILE|TEMPORARY DIAG|TEMPORARY SUB-PROFILE|REVERT AFTER MEASURED" src/ games/PICO-8/bios.p8 2>/dev/null; then
+            echo "[CI gate] Diagnostic markers detected in src/ or bios.p8 — SKIPPING binary commit-back."
+            echo "[CI gate] Binary built successfully and uploads as workflow artifact for manual deploy."
+            echo "[CI gate] Will commit binary back automatically once diagnostic markers are removed."
+            exit 0
+          fi
+          # Try up to 5 times — if main moved (sibling CI raced ahead),
+          # reset to origin/main, overwrite the binary with OUR fresh one,
+          # commit, push. Avoid `git pull --rebase` because the binary
+          # merge conflict cannot be auto-resolved.
+          PUSH_OK=0
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/ci-binary/PICO-8 games/PICO-8/PICO-8
+            chmod +x games/PICO-8/PICO-8
+            if git diff --quiet games/PICO-8/PICO-8; then
+              echo "ARM binary unchanged after sync — nothing to commit."
+              break
+            fi
+            git add games/PICO-8/PICO-8
+            git commit -m "CI: rebuild ARM binary for ${{ github.sha }}"
+            if git push; then
+              echo "Push succeeded on attempt $i."
+              PUSH_OK=1
+              break
+            fi
+            echo "Push failed (attempt $i), resyncing and retrying..."
+            sleep 2
+          done
+          # Trigger MiSTer_Frontier DB rebuild on successful binary push so
+          # db.json reflects the new hash promptly (prevents update_all hash-
+          # mismatch failures in the window between binary push and daily cron).
+          # Requires MISTER_FRONTIER_DISPATCH_TOKEN secret (classic PAT,
+          # workflow scope, no expiration -- threat model justifies this:
+          # token only triggers workflow_dispatch on MiSTer_Frontier).
+          # If unset, just warns (daily cron handles propagation slower).
+          if [ "$PUSH_OK" = "1" ]; then
+            if [ -n "${{ secrets.MISTER_FRONTIER_DISPATCH_TOKEN }}" ]; then
+              echo "Triggering MiSTer_Frontier DB rebuild..."
+              GH_TOKEN="${{ secrets.MISTER_FRONTIER_DISPATCH_TOKEN }}" \
+                gh workflow run "Build Custom Database" -R MiSTerOrganize/MiSTer_Frontier \
+                || echo "WARN: DB dispatch failed (token may be expired)"
+              # Refresh the rolling 'latest' GitHub Release so its zip asset
+              # matches the just-committed binary. The commit-back push above
+              # used GITHUB_TOKEN, which does NOT re-trigger refresh_release's
+              # `on: push`, so we dispatch it explicitly (same PAT as the DB
+              # rebuild). Manual RBF/handler/README pushes hit its on:push path
+              # trigger directly. Content-gated -> a redundant fire is a no-op.
+              echo "Triggering rolling 'latest' release refresh..."
+              GH_TOKEN="${{ secrets.MISTER_FRONTIER_DISPATCH_TOKEN }}" \
+                gh workflow run refresh_release.yml -R ${{ github.repository }} \
+                || echo "WARN: refresh_release dispatch failed"
+            else
+              echo "WARN: MISTER_FRONTIER_DISPATCH_TOKEN not set -- skipping DB auto-dispatch."
+              echo "      Add this PAT secret to close the db.json staleness window."
+            fi
+          fi
+
+      - name: Package release zip
+        run: |
+          mkdir -p release-staging/games/PICO-8 release-staging/_Other release-staging/docs/PICO-8
+          cp build-arm/PICO-8 release-staging/games/PICO-8/
+          cp games/PICO-8/bios.p8 release-staging/games/PICO-8/
+          cp games/PICO-8/_handler.sh release-staging/games/PICO-8/
+          cp _Other/PICO-8*.rbf release-staging/_Other/
+          cp docs/PICO-8/README.md release-staging/docs/PICO-8/
+          chmod +x release-staging/games/PICO-8/PICO-8 release-staging/games/PICO-8/_handler.sh
+          cd release-staging && zip -r ../MiSTer-PICO-8-release.zip _Other/ docs/ games/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiSTer-PICO-8-release
+          path: release-staging/
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MiSTer-PICO-8-release.zip
