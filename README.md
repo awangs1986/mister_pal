@@ -5,20 +5,22 @@
 **中文：**  
 本仓库是在上游开源工作上的二次开发，不是从零凭空写出来的：
 
+- **MiSTer 平台：** 运行于 [MiSTer FPGA](https://github.com/MiSTer-devel/Main_MiSTer)（DE10-Nano + 开源框架）。没有 MiSTer，就没有这个核的容身之处。  
 - **游戏引擎：** 基于 [SDLPAL](https://github.com/sdlpal/sdlpal)（仙剑一开源引擎）修改与移植。  
 - **MiSTer 混合核框架：** 借鉴并改编自 [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8) 的 FPGA + HPS（ARM）架构思路。  
 - **CRT / 时序关键参数：** 参考了 [NeoGeo MiSTer](https://github.com/MiSTer-devel/NeoGeo_MiSTer) 项目的经验（如 320×224 一类与隔行/RGBS 相关的时序与同步做法）。
 
-再次衷心感谢 **SDLPAL** 全体作者与贡献者（含 Wei Mingzhi 等），**MiSTer PICO-8** 相关作者，以及 **NeoGeo MiSTer** 与整个 MiSTer 社区——没有你们的工作，就不会有这个项目。
+再次衷心感谢 **MiSTer** 项目（Sorgelig 与全体贡献者）、**SDLPAL** 全体作者与贡献者（含 Wei Mingzhi 等）、**MiSTer PICO-8** 相关作者，以及 **NeoGeo MiSTer** 与整个 MiSTer 社区——没有你们的工作，就不会有这个项目。
 
 **English：**  
 This repository is a derivative / follow-on project, not a from-scratch codebase:
 
+- **MiSTer platform:** runs on [MiSTer FPGA](https://github.com/MiSTer-devel/Main_MiSTer) (DE10-Nano + open framework). Without MiSTer, this core has nowhere to live.  
 - **Game engine:** based on [SDLPAL](https://github.com/sdlpal/sdlpal) (open-source *Chinese Paladin I* engine), modified and ported here.  
 - **MiSTer hybrid-core scaffolding:** adapted from the FPGA + HPS (ARM) approach of [MiSTer PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8).  
 - **CRT-critical timing:** drew on experience from [NeoGeo MiSTer](https://github.com/MiSTer-devel/NeoGeo_MiSTer) (e.g. 320×224-class timing and sync practices relevant to interlaced / RGBS CRTs).
 
-Once again, sincere thanks to the **SDLPAL** authors and contributors (including Wei Mingzhi and the SDLPAL team), the **MiSTer PICO-8** authors, and the **NeoGeo MiSTer** / wider MiSTer community—this project would not exist without your work.
+Once again, sincere thanks to the **MiSTer** project (Sorgelig and all contributors), the **SDLPAL** authors and contributors (including Wei Mingzhi and the SDLPAL team), the **MiSTer PICO-8** authors, and the **NeoGeo MiSTer** / wider MiSTer community—this project would not exist without your work.
 
 ---
 
@@ -244,28 +246,131 @@ If you prefer the **original soundtrack path**, you can also try **RIX** (e.g. `
 
 ---
 
-## Build (ARM)
+## Build help / 编译帮助
 
-On Linux/WSL with `arm-linux-gnueabihf-gcc`:
+**中文：** 下面是自己从源码编 ARM 程序和 FPGA 核的步骤。不会编的话，把本仓库链接 + MiSTer IP/密码丢给 AI 往往更快。  
+**English：** Steps to build the ARM binary and FPGA bitstream from source. If that is too much hassle, give an AI this repo URL plus your MiSTer IP/root password.
+
+### Prerequisites / 环境要求
+
+**中文：**
+- Linux 或 **WSL2**（推荐 Ubuntu）
+- ARM 交叉编译器：`arm-linux-gnueabihf-gcc` / `g++`，以及 `cmake`、`make`
+- FPGA：Intel/Altera **Quartus**（Cyclone V / DE10-Nano / MiSTer 常用版本），能打开本仓库 `fpga/` 工程
+- 一台已能联网/SSH 的 **MiSTer**（用于拷贝产物；默认 SSH：`root`，密码以你机器为准）
+
+**English：**
+- Linux or **WSL2** (Ubuntu recommended)
+- ARM cross toolchain: `arm-linux-gnueabihf-gcc` / `g++`, plus `cmake` and `make`
+- FPGA: Intel/Altera **Quartus** for Cyclone V / DE10-Nano / MiSTer, able to open `fpga/`
+- A reachable **MiSTer** for deploy (SSH `root`; password is yours)
+
+安装交叉编译器示例（Debian/Ubuntu） / toolchain example:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake git \
+  g++-arm-linux-gnueabihf gcc-arm-linux-gnueabihf
+```
+
+### 1) Build ARM binary (`PAL`) / 编译 ARM 程序
+
+**中文：** 仓库内已包含 `sdlpal/`。在仓库根目录执行：
+
+**English：** This repo vendors `sdlpal/`. From the repo root:
 
 ```bash
 cmake -B build-arm -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
   -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
+  -DCMAKE_C_FLAGS="-mcpu=cortex-a9 -mfloat-abi=hard -mfpu=neon" \
+  -DCMAKE_CXX_FLAGS="-mcpu=cortex-a9 -mfloat-abi=hard -mfpu=neon" \
   -DCMAKE_EXE_LINKER_FLAGS="-static"
 cmake --build build-arm -j"$(nproc)"
 ```
 
-Copy the resulting `PAL` binary to `/media/fat/games/PAL2/PAL`.
+**中文：**  
+- 成功后二进制一般在 `build-arm/PAL`（以 CMake 实际输出为准）。  
+- **建议静态链接**（上面的 `-static`），避免 MiSTer 上 glibc 版本不够用。  
+- 用 `file build-arm/PAL` 应看到 `ARM` / `statically linked` 一类字样。
 
-## FPGA
+**English：**  
+- Output binary is usually `build-arm/PAL` (check your CMake output).  
+- **Static link** (`-static`) is recommended so old MiSTer glibc is not a problem.  
+- `file build-arm/PAL` should report ARM / statically linked.
 
-Open `fpga/` in Quartus (Cyclone V / MiSTer). Output RBF → `/media/fat/_Other/PAL2.rbf`.
+拷到 MiSTer / copy to MiSTer:
+
+```bash
+scp build-arm/PAL root@<MISTER_IP>:/media/fat/games/PAL2/PAL
+ssh root@<MISTER_IP> "chmod +x /media/fat/games/PAL2/PAL"
+```
+
+同时确保有启动脚本 / also ensure the handler exists:
+
+```text
+/media/fat/games/PAL2/_handler.sh
+```
+
+（可用仓库里的 `games/PAL2/_handler.sh` 上传。）
+
+### 2) Build FPGA bitstream (`PAL2.rbf`) / 编译 FPGA
+
+**中文：**
+1. 用 Quartus 打开 `fpga/` 下的工程（如 `PAL2.qsf` / 工程主文件，以目录内实际名为准）。  
+2. 目标器件按 **MiSTer / DE10-Nano（Cyclone V）** 配置，不要改成别的板子。  
+3. 执行 **Analysis & Synthesis → Fitter → Assembler**（或一键 Compile）。  
+4. 在 `fpga/output_files/`（或工程设定的输出目录）找到生成的 **`.rbf`**。  
+5. 拷到 MiSTer：
+
+**English：**
+1. Open the Quartus project under `fpga/` (e.g. `PAL2.qsf` — use the files actually in the tree).  
+2. Target **MiSTer / DE10-Nano (Cyclone V)**; do not retarget another board.  
+3. Run full compile (Synthesis → Fitter → Assembler).  
+4. Pick up the **`.rbf`** from `fpga/output_files/` (or your project output dir).  
+5. Copy to MiSTer:
+
+```bash
+scp <your>.rbf root@<MISTER_IP>:/media/fat/_Other/PAL2.rbf
+```
+
+**中文：** 仓库若已带 `_Other/PAL2.rbf`，可跳过 FPGA 编译，直接用现成比特流试跑。  
+**English：** If `_Other/PAL2.rbf` is already in the repo, you can skip Quartus and try that bitstream first.
+
+### 3) Game data (not built) / 游戏数据（不是编译出来的）
+
+**中文：** 编译**不会**生成 Softstar 素材。正版数据与 OGG 的放置见上文「正版资源怎么放」。  
+**English：** Building does **not** produce Softstar assets. See **Game data setup** above for retail files and Workshop OGG.
+
+### 4) Run on MiSTer / 在 MiSTer 上运行
+
+**中文：**
+1. 在 MiSTer 菜单加载 **`_Other/PAL2.rbf`**（或你命名的 PAL2 核）。  
+2. Handler 应自动启动 `/media/fat/games/PAL2/PAL`。  
+3. 日志常见位置：`/media/fat/logs/PAL2/PAL.log`（可 `grep DIAG`）。  
+4. 若黑屏/无声：先确认 `Games/` 与 `Games/ogg/`，再确认只有**一个** `PAL` 进程。
+
+**English：**
+1. Load **`_Other/PAL2.rbf`** from the MiSTer menu.  
+2. The handler should start `/media/fat/games/PAL2/PAL`.  
+3. Logs are often at `/media/fat/logs/PAL2/PAL.log` (`grep DIAG`).  
+4. Black screen / silence: check `Games/` + `Games/ogg/`, and that only **one** `PAL` process is running.
+
+### 5) Common pitfalls / 常见坑
+
+| 现象 / Symptom | 可能原因 / Likely cause |
+|----------------|-------------------------|
+| `GLIBC_2.xx not found` | 未静态链接，或用了主机本机 gcc 而非 armhf 交叉编译 |
+| 有核无游戏 / core loads, no game | 缺 `_handler.sh`，或 `PAL` 不在 `/media/fat/games/PAL2/` |
+| 无音乐 / no BGM | 缺 `Games/ogg/NN.ogg`（两位数字文件名） |
+| 花屏/不同步 / bad sync on CRT | 用了错误的 `.rbf`，或未走本核原生视频路径 |
+| 双进程音频炸裂 / audio noise | 两个 `./PAL` 同时写音频环 — `killall PAL` 后只留一个 |
 
 ---
 
 ## Credits
 
+- [MiSTer FPGA](https://github.com/MiSTer-devel/Main_MiSTer) — Sorgelig & contributors (platform)
 - SDLPAL / Wei Mingzhi & contributors — engine ([GPL-3.0](https://github.com/sdlpal/sdlpal))
 - [PAL SC Soundtracks](https://steamcommunity.com/sharedfiles/filedetails/?id=2433259482) — Roland SC OGG pack (obtain via Steam Workshop; not redistributed here)
 - MiSTer hybrid-core patterns ([PICO-8](https://github.com/MiSTerOrganize/MiSTer_PICO-8))
